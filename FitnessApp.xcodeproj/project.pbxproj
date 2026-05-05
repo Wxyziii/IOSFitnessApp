@@ -6,9 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		AA0000000000000000000001 /* FitnessApp.app in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = AA0000000000000000000002 /* FitnessApp.app */; };
-/* End PBXBuildFile section */
+/* Begin PBXContainerItemProxy section */
+		AA0000000000000000000021 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = AA0000000000000000000019 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = AA0000000000000000000010;
+			remoteInfo = FitnessApp;
+		};
+/* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
 		AA0000000000000000000002 /* FitnessApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FitnessApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -18,19 +24,11 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		AA0000000000000000000004 /* FitnessApp */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
 			path = FitnessApp;
 			sourceTree = "<group>";
 		};
 		AA0000000000000000000005 /* FitnessAppTests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			explicitFileTypes = {
-			};
-			explicitFolders = (
-			);
 			path = FitnessAppTests;
 			sourceTree = "<group>";
 		};
@@ -200,16 +198,6 @@
 			targetProxy = AA0000000000000000000021 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
-
-/* Begin PBXContainerItemProxy section */
-		AA0000000000000000000021 /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = AA0000000000000000000019 /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = AA0000000000000000000010;
-			remoteInfo = FitnessApp;
-		};
-/* End PBXContainerItemProxy section */
 
 /* Begin XCBuildConfiguration section */
 		AA0000000000000000000022 /* Debug */ = {
@@ -433,15 +421,6 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		AA0000000000000000000020 /* Build configuration list for PBXProject "FitnessApp" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				AA0000000000000000000022 /* Debug */,
-				AA0000000000000000000023 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 		AA0000000000000000000011 /* Build configuration list for PBXNativeTarget "FitnessApp" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -456,6 +435,15 @@
 			buildConfigurations = (
 				AA0000000000000000000026 /* Debug */,
 				AA0000000000000000000027 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		AA0000000000000000000020 /* Build configuration list for PBXProject "FitnessApp" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AA0000000000000000000022 /* Debug */,
+				AA0000000000000000000023 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

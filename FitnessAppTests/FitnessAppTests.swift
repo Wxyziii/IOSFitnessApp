@@ -59,6 +59,47 @@ struct FitnessAppTests {
         #expect(totals[.chest, default: 0] > 0)
     }
 
+    @Test func primaryMuscleActivationUsesFullVolume() {
+        let exercise = Exercise(name: "Bench", primaryMuscle: .chest, secondaryMuscles: [.triceps], equipment: .barbell, instructions: "")
+        let session = WorkoutSession(date: .now, workoutPlan: nil, durationMinutes: 30, completedSets: [
+            ExerciseSet(exercise: exercise, weightKg: 100, reps: 5, setIndex: 0)
+        ])
+
+        let totals = StatsCalculator.muscleTotals(from: [session])
+        #expect(totals[.chest] == 500)
+    }
+
+    @Test func secondaryMuscleActivationUsesPartialVolume() {
+        let exercise = Exercise(name: "Bench", primaryMuscle: .chest, secondaryMuscles: [.triceps], equipment: .barbell, instructions: "")
+        let session = WorkoutSession(date: .now, workoutPlan: nil, durationMinutes: 30, completedSets: [
+            ExerciseSet(exercise: exercise, weightKg: 100, reps: 5, setIndex: 0)
+        ])
+
+        let totals = StatsCalculator.muscleTotals(from: [session])
+        #expect(totals[.triceps] == 175)
+    }
+
+    @Test func sampleExercisesUseSpecificMuscles() throws {
+        let exercises = SampleDataSeeder.makeExercises()
+        let bench = try #require(exercises.first { $0.name == "Barbell Bench Press" })
+        let pullUp = try #require(exercises.first { $0.name == "Pull Up" })
+        let squat = try #require(exercises.first { $0.name == "Barbell Squat" })
+
+        #expect(bench.primaryMuscle == .chest)
+        #expect(bench.secondaryMuscleGroups == [.frontDelts, .triceps])
+        #expect(pullUp.primaryMuscle == .lats)
+        #expect(pullUp.secondaryMuscleGroups.contains(.upperBack))
+        #expect(squat.primaryMuscle == .quads)
+    }
+
+    @Test func svgRegionMappingIntegrity() {
+        #expect(MuscleMapRegionCatalog.regions.isEmpty == false)
+        #expect(MuscleMapRegionCatalog.regions.count == MuscleMapRegionCatalog.muscleByRegionID.count)
+        #expect(MuscleMapRegionCatalog.muscleByRegionID["front_chest_left"] == .chest)
+        #expect(MuscleMapRegionCatalog.muscleByRegionID["back_lats"] == .lats)
+        #expect(MuscleMapRegionCatalog.regions.allSatisfy { $0.assetRegionName == $0.svgRegionID })
+    }
+
     @Test func workoutPlanOrdering() {
         let exercise = Exercise(name: "Bench", primaryMuscle: .chest, equipment: .barbell, instructions: "")
         let plan = WorkoutPlan(name: "Test", subtitle: "")

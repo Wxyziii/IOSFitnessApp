@@ -11,6 +11,7 @@ struct StatsView: View {
         let totals = StatsCalculator.muscleTotals(from: sessionArray)
         return MuscleGroup.chartGroups.map { MuscleShare(group: $0, value: totals[$0, default: 0]) }
             .filter { $0.value > 0 }
+            .sorted { $0.value > $1.value }
     }
 
     var body: some View {
@@ -25,6 +26,19 @@ struct StatsView: View {
                     SectionCard("Muscle Group Breakdown") {
                         MuscleBreakdownChart(shares: muscleShares)
                         muscleLegend
+                    }
+                    SectionCard("Top Trained Muscles") {
+                        VStack(spacing: 10) {
+                            ForEach(muscleShares.prefix(6)) { share in
+                                HStack {
+                                    MuscleTag(title: share.group.rawValue)
+                                    Spacer()
+                                    Text("\(Int(share.value)) kg")
+                                        .foregroundStyle(AppTheme.muted)
+                                }
+                                .font(.subheadline)
+                            }
+                        }
                     }
                 }
                 .padding()

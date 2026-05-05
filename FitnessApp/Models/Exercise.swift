@@ -33,6 +33,10 @@ final class Exercise {
         MuscleGroup(rawValue: primaryMuscleRaw) ?? .chest
     }
 
+    var secondaryMuscleGroups: [MuscleGroup] {
+        secondaryMuscles.compactMap(MuscleGroup.init(rawValue:))
+    }
+
     var equipment: EquipmentType {
         EquipmentType(rawValue: equipmentRaw) ?? .bodyweight
     }

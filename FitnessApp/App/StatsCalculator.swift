@@ -37,9 +37,24 @@ enum StatsCalculator {
         var totals: [MuscleGroup: Double] = [:]
         for set in sessions.flatMap(\.completedSets) where set.completed {
             guard let exercise = set.exercise else { continue }
-            totals[exercise.primaryMuscle, default: 0] += set.weightKg * Double(set.reps)
+            let volume = set.weightKg * Double(set.reps)
+            totals[exercise.primaryMuscle, default: 0] += volume * MuscleMapRegionCatalog.primaryActivation
+            for secondary in exercise.secondaryMuscleGroups {
+                totals[secondary, default: 0] += volume * MuscleMapRegionCatalog.secondaryActivation
+            }
         }
         return totals
+    }
+
+    static func lastTrainedDate(for muscle: MuscleGroup, sessions: [WorkoutSession]) -> Date? {
+        sessions.filter { session in
+            session.completedSets.contains { set in
+                guard let exercise = set.exercise else { return false }
+                return exercise.primaryMuscle == muscle || exercise.secondaryMuscleGroups.contains(muscle)
+            }
+        }
+        .map(\.date)
+        .max()
     }
 
     static func equipmentReps(from sessions: [WorkoutSession], equipment: EquipmentType) -> Int {
