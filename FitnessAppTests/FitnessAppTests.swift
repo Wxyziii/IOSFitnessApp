@@ -111,6 +111,78 @@ struct FitnessAppTests {
         #expect(plan.orderedExercises.map(\.orderIndex) == [0, 1, 2])
     }
 
+    @Test func weeklyPlanRestDaysKeepStreak() {
+        let calendar = Calendar(identifier: .gregorian)
+        let today = calendar.startOfDay(for: Date(timeIntervalSince1970: 1_700_000_000))
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+        let twoDaysAgo = calendar.date(byAdding: .day, value: -2, to: today)!
+        let exercise = Exercise(name: "Bench", primaryMuscle: .chest, equipment: .barbell, instructions: "")
+        let plan = WorkoutPlan(name: "Push", subtitle: "")
+        let sessions = [
+            WorkoutSession(date: twoDaysAgo, workoutPlan: plan, durationMinutes: 30, completedSets: [
+                ExerciseSet(exercise: exercise, weightKg: 80, reps: 8, setIndex: 0)
+            ])
+        ]
+        let weekPlan = [
+            WeekPlanDay(date: today, workoutPlan: plan),
+            WeekPlanDay(date: yesterday, isRestDay: true),
+            WeekPlanDay(date: twoDaysAgo, workoutPlan: plan)
+        ]
+
+        #expect(StatsCalculator.currentStreak(from: sessions, weekPlanDays: weekPlan, calendar: calendar, today: today) == 2)
+    }
+
+    @Test func unplannedDayBreaksWeeklyStreak() {
+        let calendar = Calendar(identifier: .gregorian)
+        let today = calendar.startOfDay(for: Date(timeIntervalSince1970: 1_700_000_000))
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+        let twoDaysAgo = calendar.date(byAdding: .day, value: -2, to: today)!
+        let plan = WorkoutPlan(name: "Push", subtitle: "")
+        let weekPlan = [
+            WeekPlanDay(date: yesterday, isRestDay: true),
+            WeekPlanDay(date: twoDaysAgo, workoutPlan: plan)
+        ]
+
+        #expect(StatsCalculator.currentStreak(from: [], weekPlanDays: weekPlan, calendar: calendar, today: today) == 0)
+    }
+
+    @Test func missedPlannedWorkoutBreaksWeeklyStreak() {
+        let calendar = Calendar(identifier: .gregorian)
+        let today = calendar.startOfDay(for: Date(timeIntervalSince1970: 1_700_000_000))
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: today)!
+        let plan = WorkoutPlan(name: "Push", subtitle: "")
+        let weekPlan = [
+            WeekPlanDay(date: today, isRestDay: true),
+            WeekPlanDay(date: yesterday, workoutPlan: plan)
+        ]
+
+        #expect(StatsCalculator.currentStreak(from: [], weekPlanDays: weekPlan, calendar: calendar, today: today) == 1)
+    }
+
+    @Test func fulfilledWeekdayIndexesIncludeRestAndCompletedWorkout() {
+        let calendar = Calendar(identifier: .gregorian)
+        let today = calendar.startOfDay(for: Date(timeIntervalSince1970: 1_700_000_000))
+        let start = SampleDataSeeder.startOfWeek(containing: today, calendar: calendar)
+        let workoutDate = calendar.date(byAdding: .day, value: 1, to: start)!
+        let restDate = calendar.date(byAdding: .day, value: 2, to: start)!
+        let exercise = Exercise(name: "Bench", primaryMuscle: .chest, equipment: .barbell, instructions: "")
+        let plan = WorkoutPlan(name: "Push", subtitle: "")
+        let sessions = [
+            WorkoutSession(date: workoutDate, workoutPlan: plan, durationMinutes: 30, completedSets: [
+                ExerciseSet(exercise: exercise, weightKg: 80, reps: 8, setIndex: 0)
+            ])
+        ]
+        let indexes = StatsCalculator.fulfilledWeekdayIndexes(
+            from: sessions,
+            weekPlanDays: [WeekPlanDay(date: workoutDate, workoutPlan: plan), WeekPlanDay(date: restDate, isRestDay: true)],
+            calendar: calendar,
+            today: today
+        )
+
+        #expect(indexes.contains(1))
+        #expect(indexes.contains(2))
+    }
+
     @Test func workoutSessionCreatedFromCompletedSets() {
         let exercise = Exercise(name: "Bench", primaryMuscle: .chest, equipment: .barbell, instructions: "")
         let sets = [

@@ -103,6 +103,7 @@ enum AppSchema {
         WorkoutPlanExercise.self,
         WorkoutSession.self,
         ExerciseSet.self,
+        WeekPlanDay.self,
         Achievement.self
     ]
 

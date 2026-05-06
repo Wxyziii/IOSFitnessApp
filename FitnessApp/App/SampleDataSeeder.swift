@@ -5,7 +5,10 @@ enum SampleDataSeeder {
     static func seedIfNeeded(in context: ModelContext) {
         let descriptor = FetchDescriptor<Exercise>()
         let existing = (try? context.fetchCount(descriptor)) ?? 0
-        guard existing == 0 else { return }
+        guard existing == 0 else {
+            seedWeekPlanIfNeeded(in: context)
+            return
+        }
 
         let exercises = makeExercises()
         exercises.forEach { context.insert($0) }
@@ -15,6 +18,7 @@ enum SampleDataSeeder {
 
         makeSessions(plans: plans).forEach { context.insert($0) }
         makeAchievements().forEach { context.insert($0) }
+        makeWeekPlan(plans: plans).forEach { context.insert($0) }
 
         try? context.save()
     }
@@ -144,6 +148,37 @@ enum SampleDataSeeder {
             Achievement(title: "Dumbbell Reps", subtitle: "Complete 20,000 dumbbell reps", category: "Volume", iconName: "dumbbell.fill", progress: 15678, target: 20000, colorToken: "orange"),
             Achievement(title: "Cable Reps", subtitle: "Complete 10,000 cable reps", category: "Volume", iconName: "figure.strengthtraining.traditional", progress: 7869, target: 10000)
         ]
+    }
+
+    static func makeWeekPlan(plans: [WorkoutPlan], calendar: Calendar = .current, today: Date = .now) -> [WeekPlanDay] {
+        guard plans.isEmpty == false else { return [] }
+        let start = startOfWeek(containing: today, calendar: calendar)
+        return (0..<7).compactMap { offset in
+            guard let date = calendar.date(byAdding: .day, value: offset, to: start) else { return nil }
+            switch offset {
+            case 1, 3, 5:
+                return WeekPlanDay(date: date, workoutPlan: plans[offset % plans.count])
+            case 0, 6:
+                return WeekPlanDay(date: date, isRestDay: true)
+            default:
+                return nil
+            }
+        }
+    }
+
+    private static func seedWeekPlanIfNeeded(in context: ModelContext) {
+        let existing = (try? context.fetchCount(FetchDescriptor<WeekPlanDay>())) ?? 0
+        guard existing == 0 else { return }
+        let plans = (try? context.fetch(FetchDescriptor<WorkoutPlan>())) ?? []
+        makeWeekPlan(plans: plans).forEach { context.insert($0) }
+        try? context.save()
+    }
+
+    static func startOfWeek(containing date: Date, calendar: Calendar = .current) -> Date {
+        let startOfDay = calendar.startOfDay(for: date)
+        let weekday = calendar.component(.weekday, from: startOfDay)
+        let daysFromWeekStart = (weekday - calendar.firstWeekday + 7) % 7
+        return calendar.date(byAdding: .day, value: -daysFromWeekStart, to: startOfDay) ?? startOfDay
     }
 
     private static func e(_ name: String, _ primary: MuscleGroup, _ secondary: [MuscleGroup], _ equipment: EquipmentType) -> Exercise {

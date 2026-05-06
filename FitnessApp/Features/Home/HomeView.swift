@@ -5,10 +5,27 @@ struct HomeView: View {
     @Query(sort: \WorkoutPlan.createdAt) private var plans: [WorkoutPlan]
     @Query(sort: \WorkoutSession.date, order: .reverse) private var sessions: [WorkoutSession]
     @Query(sort: \Exercise.name) private var exercises: [Exercise]
+    @Query(sort: \WeekPlanDay.date) private var weekPlanDays: [WeekPlanDay]
     @State private var selectedMuscle: MuscleGroup?
+    @State private var showingWeekPlanner = false
 
     private var muscleTotals: [MuscleGroup: Double] {
         StatsCalculator.muscleTotals(from: Array(sessions))
+    }
+
+    private var currentStreak: Int {
+        StatsCalculator.currentStreak(from: Array(sessions), weekPlanDays: Array(weekPlanDays))
+    }
+
+    private var fulfilledWeekdays: Set<Int> {
+        StatsCalculator.fulfilledWeekdayIndexes(from: Array(sessions), weekPlanDays: Array(weekPlanDays))
+    }
+
+    private var selectedWeekdayIndex: Int {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        let start = SampleDataSeeder.startOfWeek(containing: today, calendar: calendar)
+        return min(max(calendar.dateComponents([.day], from: start, to: today).day ?? 0, 0), 6)
     }
 
     var body: some View {
@@ -16,7 +33,8 @@ struct HomeView: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: 22) {
                     header
-                    WeeklyStreakStrip(completedDays: [0, 1, 2, 3], selectedDay: 3)
+                    planWeekButton
+                    WeeklyStreakStrip(completedDays: fulfilledWeekdays, selectedDay: selectedWeekdayIndex)
                     SectionCard {
                         VStack(alignment: .leading, spacing: 16) {
                             legend
@@ -49,6 +67,9 @@ struct HomeView: View {
                     exercises: exercises.filter { $0.primaryMuscle == muscle || $0.secondaryMuscleGroups.contains(muscle) }
                 )
             }
+            .sheet(isPresented: $showingWeekPlanner) {
+                WeekPlannerView()
+            }
             .appScreen()
         }
     }
@@ -63,9 +84,26 @@ struct HomeView: View {
                     .foregroundStyle(AppTheme.muted)
             }
             Spacer()
-            StreakPill(count: max(StatsCalculator.currentStreak(from: Array(sessions)), 12))
+            StreakPill(count: currentStreak)
         }
         .padding(.top, 24)
+    }
+
+    private var planWeekButton: some View {
+        Button {
+            showingWeekPlanner = true
+        } label: {
+            HStack {
+                Label("Plan your week", systemImage: "calendar.badge.plus")
+                    .font(.headline)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .foregroundStyle(AppTheme.muted)
+            }
+            .cardStyle()
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("Plan your week")
     }
 
     private var legend: some View {

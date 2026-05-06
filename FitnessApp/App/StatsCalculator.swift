@@ -33,6 +33,48 @@ enum StatsCalculator {
         return count
     }
 
+    static func currentStreak(from sessions: [WorkoutSession], weekPlanDays: [WeekPlanDay], calendar: Calendar = .current, today: Date = .now) -> Int {
+        let todayStart = calendar.startOfDay(for: today)
+        let completedWorkoutDays = Set(sessions.map { calendar.startOfDay(for: $0.date) })
+        let planByDay = Dictionary(grouping: weekPlanDays) { calendar.startOfDay(for: $0.date) }
+        guard planByDay[todayStart]?.first?.isPlanned == true else { return 0 }
+
+        func isFulfilled(_ day: Date) -> Bool {
+            guard let plan = planByDay[day]?.first, plan.isPlanned else { return false }
+            if plan.isRestDay { return true }
+            return completedWorkoutDays.contains(day)
+        }
+
+        var cursor = todayStart
+        if !isFulfilled(cursor),
+           let yesterday = calendar.date(byAdding: .day, value: -1, to: cursor),
+           isFulfilled(yesterday) {
+            cursor = yesterday
+        }
+
+        var count = 0
+        while isFulfilled(cursor) {
+            count += 1
+            guard let previous = calendar.date(byAdding: .day, value: -1, to: cursor) else { break }
+            cursor = previous
+        }
+        return count
+    }
+
+    static func fulfilledWeekdayIndexes(from sessions: [WorkoutSession], weekPlanDays: [WeekPlanDay], calendar: Calendar = .current, today: Date = .now) -> Set<Int> {
+        let completedWorkoutDays = Set(sessions.map { calendar.startOfDay(for: $0.date) })
+        let start = SampleDataSeeder.startOfWeek(containing: today, calendar: calendar)
+        return Set((0..<7).compactMap { index in
+            guard let date = calendar.date(byAdding: .day, value: index, to: start),
+                  let plan = weekPlanDays.first(where: { calendar.isDate($0.date, inSameDayAs: date) }),
+                  plan.isPlanned else { return nil }
+            if plan.isRestDay || completedWorkoutDays.contains(calendar.startOfDay(for: date)) {
+                return index
+            }
+            return nil
+        })
+    }
+
     static func muscleTotals(from sessions: [WorkoutSession]) -> [MuscleGroup: Double] {
         var totals: [MuscleGroup: Double] = [:]
         for set in sessions.flatMap(\.completedSets) where set.completed {
