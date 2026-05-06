@@ -5,7 +5,57 @@ import WidgetKit
 @main
 struct WorkoutLiveActivityWidgetBundle: WidgetBundle {
     var body: some Widget {
+        WorkoutCompanionWidget()
         WorkoutLiveActivityWidget()
+    }
+}
+
+struct WorkoutCompanionWidget: Widget {
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: "WorkoutCompanionWidget", provider: WorkoutCompanionProvider()) { entry in
+            WorkoutCompanionWidgetView(entry: entry)
+                .containerBackground(Color(red: 0.02, green: 0.04, blue: 0.05), for: .widget)
+        }
+        .configurationDisplayName("Fitness Workout")
+        .description("Quick workout status.")
+        .supportedFamilies([.systemSmall])
+    }
+}
+
+private struct WorkoutCompanionProvider: TimelineProvider {
+    func placeholder(in context: Context) -> WorkoutCompanionEntry {
+        WorkoutCompanionEntry(date: .now)
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (WorkoutCompanionEntry) -> Void) {
+        completion(WorkoutCompanionEntry(date: .now))
+    }
+
+    func getTimeline(in context: Context, completion: @escaping (Timeline<WorkoutCompanionEntry>) -> Void) {
+        completion(Timeline(entries: [WorkoutCompanionEntry(date: .now)], policy: .never))
+    }
+}
+
+private struct WorkoutCompanionEntry: TimelineEntry {
+    let date: Date
+}
+
+private struct WorkoutCompanionWidgetView: View {
+    let entry: WorkoutCompanionEntry
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Image(systemName: "dumbbell.fill")
+                .font(.title2)
+                .foregroundStyle(.green)
+            Text("Fitness")
+                .font(.headline)
+                .foregroundStyle(.white)
+            Text("Start workout in app")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
 
@@ -101,4 +151,3 @@ private struct LockScreenWorkoutActivityView: View {
         .padding()
     }
 }
-
