@@ -28,7 +28,12 @@ struct HomeView: View {
                     SectionCard("Recent Plans", actionTitle: "View all") {} content: {
                         VStack(spacing: 10) {
                             ForEach(Array(plans.prefix(4)).indices, id: \.self) { index in
-                                WorkoutPlanRow(plan: plans[index], accessoryText: index == 0 ? "Today" : "\(index * 2) days ago")
+                                NavigationLink {
+                                    WorkoutPlanDetailView(plan: plans[index])
+                                } label: {
+                                    WorkoutPlanRow(plan: plans[index], accessoryText: index == 0 ? "Today" : "\(index * 2) days ago")
+                                }
+                                .buttonStyle(.plain)
                             }
                         }
                     }

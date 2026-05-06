@@ -111,6 +111,81 @@ struct FitnessAppTests {
         #expect(plan.orderedExercises.map(\.orderIndex) == [0, 1, 2])
     }
 
+    @Test func workoutSessionCreatedFromCompletedSets() {
+        let exercise = Exercise(name: "Bench", primaryMuscle: .chest, equipment: .barbell, instructions: "")
+        let sets = [
+            ExerciseSet(exercise: exercise, weightKg: 80, reps: 8, setIndex: 1),
+            ExerciseSet(exercise: exercise, weightKg: 85, reps: 6, setIndex: 2)
+        ]
+        let session = WorkoutSession(date: .now, workoutPlan: nil, durationMinutes: 42, completedSets: sets)
+
+        #expect(session.completedSets.count == 2)
+        #expect(session.durationMinutes == 42)
+    }
+
+    @Test func incompleteSetsDoNotCountTowardStats() {
+        let exercise = Exercise(name: "Bench", primaryMuscle: .chest, equipment: .barbell, instructions: "")
+        let session = WorkoutSession(date: .now, workoutPlan: nil, durationMinutes: 30, completedSets: [
+            ExerciseSet(exercise: exercise, weightKg: 100, reps: 5, setIndex: 1, completed: true),
+            ExerciseSet(exercise: exercise, weightKg: 200, reps: 20, setIndex: 2, completed: false)
+        ])
+
+        #expect(StatsCalculator.totalVolume(from: [session]) == 500)
+        #expect(StatsCalculator.totalReps(from: [session]) == 5)
+    }
+
+    @Test func prDetectionWeightVolumeAndReps() {
+        let exercise = Exercise(name: "Squat", primaryMuscle: .quads, equipment: .barbell, instructions: "")
+        let previous = WorkoutSession(date: .now, workoutPlan: nil, durationMinutes: 30, completedSets: [
+            ExerciseSet(exercise: exercise, weightKg: 100, reps: 5, setIndex: 1),
+            ExerciseSet(exercise: exercise, weightKg: 90, reps: 6, setIndex: 2)
+        ])
+        let newSets = [
+            ExerciseSet(exercise: exercise, weightKg: 120, reps: 8, setIndex: 1),
+            ExerciseSet(exercise: exercise, weightKg: 110, reps: 8, setIndex: 2)
+        ]
+
+        let prs = WorkoutPRDetector.detect(newSets: newSets, previousSessions: [previous])
+        #expect(prs.contains { $0.type == .weight && $0.value == 120 })
+        #expect(prs.contains { $0.type == .reps && $0.value == 8 })
+        #expect(prs.contains { $0.type == .volume && $0.value == 1840 })
+    }
+
+    @Test func restTimerStateCalculation() {
+        let now = Date(timeIntervalSince1970: 1_000)
+        let state = RestTimerState(endDate: now.addingTimeInterval(90), now: now.addingTimeInterval(30))
+
+        #expect(state.remainingSeconds == 60)
+        #expect(state.isRunning)
+        #expect(RestTimerState(endDate: now, now: now).isComplete)
+    }
+
+    @Test func liveActivityStateModelCreation() {
+        let state = WorkoutLiveActivityAttributes.ContentState(
+            currentExerciseName: "Bench Press",
+            currentSet: 2,
+            totalSets: 12,
+            restEndDate: Date(timeIntervalSince1970: 2_000),
+            isResting: true,
+            elapsedWorkoutTime: 600,
+            completedSets: 3,
+            totalVolume: 1200
+        )
+
+        #expect(state.currentExerciseName == "Bench Press")
+        #expect(state.isResting)
+        #expect(state.totalVolume == 1200)
+    }
+
+    @Test func notificationSchedulingRequestModel() {
+        let request = RestNotificationScheduler.makeRequest(seconds: 0)
+
+        #expect(request.identifier == RestNotificationScheduler.restIdentifier)
+        #expect(request.title == "Rest complete")
+        #expect(request.body == "Time for your next set.")
+        #expect(request.seconds == 1)
+    }
+
     private func makeContainer() throws -> ModelContainer {
         let configuration = ModelConfiguration(schema: AppSchema.schema, isStoredInMemoryOnly: true)
         return try ModelContainer(for: AppSchema.schema, configurations: [configuration])
