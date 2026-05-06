@@ -3,7 +3,9 @@ import SwiftUI
 
 struct WorkoutsView: View {
     @Query(sort: \WorkoutPlan.createdAt) private var plans: [WorkoutPlan]
-    @State private var showingBuilder = false
+    @State private var activeCreateSheet: CreateSheet?
+    @State private var draftWorkoutName = ""
+    @State private var builderWorkoutName = ""
 
     var body: some View {
         NavigationStack {
@@ -19,7 +21,7 @@ struct WorkoutsView: View {
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        showingBuilder = true
+                        startCreateWorkout()
                     } label: {
                         Image(systemName: "plus.circle")
                             .font(.title2)
@@ -27,8 +29,16 @@ struct WorkoutsView: View {
                     .accessibilityLabel("Create workout")
                 }
             }
-            .sheet(isPresented: $showingBuilder) {
-                WorkoutBuilderView()
+            .sheet(item: $activeCreateSheet) { sheet in
+                switch sheet {
+                case .namePrompt:
+                    WorkoutNamePromptView(name: $draftWorkoutName) {
+                        builderWorkoutName = draftWorkoutName.trimmingCharacters(in: .whitespacesAndNewlines)
+                        activeCreateSheet = .builder
+                    }
+                case .builder:
+                    WorkoutBuilderView(initialName: builderWorkoutName)
+                }
             }
             .appScreen()
         }
@@ -53,7 +63,7 @@ struct WorkoutsView: View {
         SectionCard("My Workouts") {
             VStack(spacing: 12) {
                 Button {
-                    showingBuilder = true
+                    startCreateWorkout()
                 } label: {
                     HStack(spacing: 14) {
                         Image(systemName: "plus")
@@ -100,5 +110,71 @@ struct WorkoutsView: View {
             .cardStyle()
         }
         .buttonStyle(.plain)
+    }
+
+    private func startCreateWorkout() {
+        draftWorkoutName = ""
+        builderWorkoutName = ""
+        activeCreateSheet = .namePrompt
+    }
+}
+
+private enum CreateSheet: Identifiable {
+    case namePrompt
+    case builder
+
+    var id: String {
+        switch self {
+        case .namePrompt: "namePrompt"
+        case .builder: "builder"
+        }
+    }
+}
+
+private struct WorkoutNamePromptView: View {
+    @Environment(\.dismiss) private var dismiss
+    @Binding var name: String
+    let onContinue: () -> Void
+
+    private var trimmedName: String {
+        name.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(alignment: .leading, spacing: 18) {
+                Text("Name your workout before adding exercises.")
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.muted)
+
+                TextField("Workout name", text: $name)
+                    .textFieldStyle(.roundedBorder)
+                    .textInputAutocapitalization(.words)
+                    .submitLabel(.continue)
+                    .onSubmit {
+                        if !trimmedName.isEmpty {
+                            onContinue()
+                        }
+                    }
+
+                PrimaryButton(title: "Continue") {
+                    onContinue()
+                }
+                .disabled(trimmedName.isEmpty)
+                .opacity(trimmedName.isEmpty ? 0.45 : 1)
+
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("Create Workout")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Cancel") { dismiss() }
+                }
+            }
+            .appScreen()
+        }
+        .presentationDetents([.medium])
     }
 }
